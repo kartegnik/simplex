@@ -32,8 +32,8 @@ public:
 	void etmrow(int i, int j, double alpha); //сложить сткроки с коэффициентом у j строки, все добавляется в i строку
 	void etmcolomn(int i, int j, double alpha); // тоже но со столбцами
 	void print(); // какая-то странная получилась реализация
+	bool in_matrix(int i, int j);
 private:
 	void swap(SparseMatrix& tmp);
-	bool in_matrix(int i, int j);
 	void del(int i, int j);
 };
