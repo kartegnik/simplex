@@ -1,15 +1,20 @@
 #include "sparsematrix.h"
 
 int main(){
-	vector<vector<double>> a = { {1, 0}, {3, 2} };
+	ios::sync_with_stdio(NULL), cin.tie(0), cout.tie(0);
+	//cout.setf(ios::fixed), cout.precision(2);
+	vector<vector<double>> a = { {1, 2}, {3, 4} };
 	SparseMatrix spm(a);
-	vector<int> b = spm.indexrow(0);
-	for (int i = 0; i < b.size(); ++i) cout << b[i] << " ";
+	spm.print();
 	cout << "\n";
-	b = spm.indexrow(1);
-	for (int i = 0; i < b.size(); ++i) cout << b[i] << " ";
+	spm.etmrow(0, 1, 1.0);
+	spm.print();
 	cout << "\n";
-
+	spm.etmcolomn(0, 1, -1.0);
+	spm.print();
+	cout << "\n";
+	spm.etmrow(1, 0, -0.5);
+	spm.print();
+	cout << "\nspm.have(1, 0)= " << spm.have(1, 0);
 }
-// 1  0 -> [0]
-// 3  2 -> [0, 1]
+
