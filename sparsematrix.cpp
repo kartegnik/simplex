@@ -1,23 +1,35 @@
 #include "sparsematrix.h"
 
+using namespace std;
+
+double const eps = 1e-9;
+
+SparseMatrix::SparseMatrix() : SparseMatrix(0, 0){}
+
 SparseMatrix::SparseMatrix(int n = 0, int m = 0) : n(n), m(m) {
 	spmi.resize(n);
 	spmj.resize(m);
 };
 
+SparseMatrix::SparseMatrix(int n, int m, std::vector<SparseElement>& a) : SparseMatrix(n, m) {
+	for (int i = 0; i < a.size(); ++i)
+		this->set(a[i].i, a[i].j, a[i].v);
+}
+
 SparseMatrix::SparseMatrix(vector<vector<double>> &a) : SparseMatrix(a.size(), a[0].size()) {	
 	for (int i = 0; i < n; ++i) {
 		for (int j = 0; j < m; ++j) {
 			if (abs(a[i][j]) > eps)
+			//if (Tools::NE(a[i][j], 0))
 				this->set(i, j, a[i][j]);
 		}
 	}
 }
 
-SparseMatrix::SparseMatrix(vector<double> a) :SparseMatrix(a.size(), a.size()) {
+SparseMatrix::SparseMatrix(vector<double> &a) : SparseMatrix(a.size(), a.size()) {
 	for (int i = 0; i < n; ++i) {
-		if (a[i])
-			this->set(i, i, a[i]);
+		if (abs(a[i]) > eps)
+			this->addto(i, i, a[i]);
 	}
 }
 
@@ -34,7 +46,7 @@ SparseMatrix &SparseMatrix::operator=(SparseMatrix const& other) {
 	return *this;
 }
 
-void SparseMatrix::swap(SparseMatrix& tmp) {
+void SparseMatrix::swap(SparseMatrix& tmp){
 	std::swap(n, tmp.n);
 	std::swap(m, tmp.m);
 	std::swap(spmi, tmp.spmi);
@@ -42,7 +54,7 @@ void SparseMatrix::swap(SparseMatrix& tmp) {
 	std::swap(spm, tmp.spm);
 }
 
-bool SparseMatrix::have(int i, int j) {// есть ли в i и j элемент матрицы
+bool SparseMatrix::have(int i, int j) {
 	return ((spmi[i].find(j) != spmi[i].end()) && (spmj[j].find(i) != spmj[j].end()));
 }
 
@@ -54,34 +66,39 @@ pair<int, int> SparseMatrix::getnm() {
 	return { this->n, this->m };
 }
 
-double SparseMatrix::get(int i, int j) {
+double SparseMatrix::get(int i, int j){
 	if (have(i, j))
 		return spm[{i, j}];
 	return 0.0;
 }
 
 void SparseMatrix::set(int i, int j, double v) {
-	if (abs(v) > eps) {
+	if (abs(v) > eps){
+	//if (Tools::NE(v, 0)) {
+		spmi[i].insert(j);
+		spmj[j].insert(i);
+		spm[{i, j}] = v;
+	}
+}
+
+void SparseMatrix::addto(int i, int j, double v) {
+	if (abs(v) > eps){
+	//if (Tools::NE(v, 0)) {
 		spmi[i].insert(j);
 		spmj[j].insert(i);
 		spm[{i, j}] += v;
-		if (abs(spm[{i, j}]) < eps) // может конечно можно пораньше не подумать что получится 0, и сразу не добавлять но пока так
+		if (abs(spm[{i, j}]) < eps)
+		//if (Tools::NE(spm[{i, j}], 0)) // может конечно можно пораньше подумать что получится 0, и сразу не добавлять но пока так
 			del(i, j);
 	}
 }
 
-vector<int> SparseMatrix::indexrow(int i) {
-	vector<int> tmp;
-	for (auto j : spmi[i])
-		tmp.push_back(j);
-	return tmp;
+set<int> SparseMatrix::indexrow(int i) {
+	return spmi[i];
 }
 
-vector<int> SparseMatrix::indexcolomn(int j) {
-	vector<int> tmp;
-	for (auto i : spmj[j])
-		tmp.push_back(i);
-	return tmp;
+set<int> SparseMatrix::indexcolumn(int j) {
+	return spmj[j];
 }
 
 void SparseMatrix::del(int i, int j) {
@@ -90,23 +107,22 @@ void SparseMatrix::del(int i, int j) {
 	spm.erase({ i, j });
 }
 
-void SparseMatrix::etmrow(int x, int y, double alpha) { //x - номер первой строки, у - номер 2 строки
-	vector<int> str = indexrow(y); //вектор spmi[y] - где есть не нулевые элементы 
-	for (int k = 0; k < str.size(); ++k)
-		set(x, str[k], alpha * spm[{y, str[k]}]);
+void SparseMatrix::etomrow(int x, int y, double alpha) { //x - номер первой строки, у - номер 2 строки
+	//set<int> str = indexrow(y); //вектор spmi[y] - где есть не нулевые элементы 
+	for (int k : indexrow(y))
+		addto(x, k, alpha * spm[{y, k}]);
 }
 
-void SparseMatrix::etmcolomn(int x, int y, double alpha) {//здесь столбцы
-	vector<int> str = indexcolomn(y);
-	for (int k = 0; k < str.size(); ++k)
-		set(str[k], x, alpha * spm[{str[k], y}]);
+void SparseMatrix::etomcolumn(int x, int y, double alpha) {//здесь столбцы
+	for (int k : indexcolumn(y))
+		addto(k, x, alpha * spm[{k, y}]);
 }
 
-void SparseMatrix::print() {
+void SparseMatrix::print(){
 	for (int i = 0; i < n; ++i) {
 		for (int j = 0; j < m; ++j) {
 			cout.setf(ios::left);
-			cout << get(i, j) << "\t";
+			cout << get(i, j) << "  ";
 		}
 		cout << "\n";
 	}
